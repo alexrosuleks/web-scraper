@@ -1,0 +1,19 @@
+{
+  "name": "web-scraper",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Web Scraper: Crawl websites over HTTP and run your own page function on each page to extract exactly the data you need. Follow links with globs and pseudo-URLs, set limits, and export structured resul",
+  "main": "example.js",
+  "scripts": {
+    "start": "node example.js"
+  },
+  "keywords": [
+    "scraper",
+    "web-scraping",
+    "scrapely"
+  ],
+  "dependencies": {
+    "scrapely-client": "^2.25.15"
+  },
+  "license": "MIT"
+}

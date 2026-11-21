@@ -1,0 +1,45 @@
+// Web Scraper with the Scrapely JavaScript SDK (scrapely-client).
+// Install: npm install scrapely-client
+// Run:     SCRAPELY_TOKEN=your_token node example.js
+const { ScrapelyClient } = require('scrapely-client');
+
+const client = new ScrapelyClient({ token: process.env.SCRAPELY_TOKEN });
+
+async function main() {
+    const input = {
+        "startUrls": [
+            {
+                "url": "https://docs.python.org/3/tutorial/"
+            }
+        ],
+        "pageFunction": "// Runs on every page and returns its title and main text.\n// To scrape another site, change the Start URL. To extract other data, edit this\n// function; the README lists everything on the \"context\" object.\nasync function pageFunction(context) {\n    // jQuery reads the page (needs \"Inject jQuery\", which is on by default).\n    const $ = context.jQuery;\n    const pageTitle = $('title').first().text().replace(/\\s+/g, ' ').trim();\n\n    // The main content: the page's <main> or role=\"main\" area, a single <article>,\n    // a common content container, or else the whole body.\n    let main = $('main, [role=\"main\"]').first();\n    if (!main.length && $('article').length === 1) main = $('article');\n    if (!main.length) main = $('#content, #main, #main-content, .main-content, .post-content, .entry-content').first();\n    if (!main.length) main = $('body');\n\n    // Work on a copy without menus, headers, footers, sidebars, forms and scripts.\n    main = main.clone();\n    main.find('nav, header, footer, aside, form, script, style, noscript, template, svg, iframe, button, '\n        + '[role=\"navigation\"], [role=\"banner\"], [role=\"contentinfo\"], [role=\"search\"], [aria-hidden=\"true\"], .headerlink').remove();\n    // Mark the end of each block element, so paragraphs become separate lines.\n    const BREAK = '\\uE000';\n    main.find('p, div, section, li, h1, h2, h3, h4, h5, h6, pre, blockquote, tr, dt, dd, br').after(BREAK);\n    const text = main.text()\n        .split(BREAK)\n        .map((line) => line.replace(/\\s+/g, ' ').trim())\n        .filter(Boolean)\n        .join('\\n');\n\n    context.log.info(`URL: ${context.request.url}, TITLE: ${pageTitle}`);\n\n    // Each returned object becomes one row of the dataset.\n    return {\n        url: context.request.url,\n        pageTitle,\n        text,\n    };\n}",
+        "excludes": [
+            {
+                "glob": "/**/*.{png,jpg,jpeg,pdf}"
+            }
+        ],
+        "respectRobotsTxtFile": true,
+        "waitUntil": [
+            "domcontentloaded"
+        ],
+        "preNavigationHooks": "// We need to return array of (possibly async) functions here.\n// The functions accept two arguments: the \"crawlingContext\" object\n// and \"gotoOptions\".\n[\n    async (crawlingContext, gotoOptions) => {\n        // ...\n    },\n]\n",
+        "postNavigationHooks": "// We need to return array of (possibly async) functions here.\n// The functions accept a single argument: the \"crawlingContext\" object.\n[\n    async (crawlingContext) => {\n        // ...\n    },\n]",
+        "runMode": "PRODUCTION",
+        "proxyConfiguration": {
+            "useScrapelyProxy": true
+        }
+    };
+
+    // Start the scraper on Scrapely and wait for it to finish.
+    const run = await client.actor('querystone/web-scraper').call(input);
+
+    // Read the scraped results from the run's dataset.
+    const { items } = await client.dataset(run.defaultDatasetId).listItems();
+    console.log(`Scraped ${items.length} results`);
+    console.log(JSON.stringify(items, null, 2));
+}
+
+main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+});
